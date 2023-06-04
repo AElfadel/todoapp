@@ -1,6 +1,6 @@
 "use client";
 
-import Tasks from "@/components/TasksList";
+import TasksList from "@/components/TasksList";
 import React, { useEffect, useState } from "react";
 import {
   QuerySnapshot,
@@ -11,10 +11,15 @@ import {
   onSnapshot,
   query,
   updateDoc,
+  serverTimestamp,
+  orderBy,
 } from "firebase/firestore";
 import { db } from "@/firebase";
+import AddForm from "@/components/AddForm";
+import { useSession, signOut } from "next-auth/react";
 
 export default function Home() {
+  const { data: session } = useSession();
   const [tasks, setTasks] = useState([]);
   const [input, setInput] = useState("");
 
@@ -30,6 +35,7 @@ export default function Home() {
     await addDoc(collection(db, "tasks"), {
       text: input,
       compelted: false,
+      createdAt: serverTimestamp(),
     });
     setInput("");
   };
@@ -42,7 +48,7 @@ export default function Home() {
   };
 
   useEffect(() => {
-    const q = query(collection(db, "tasks"));
+    const q = query(collection(db, "tasks"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, (QuerySnapshot) => {
       const todosArray: string[] = [];
       QuerySnapshot.forEach((doc) => {
@@ -51,7 +57,7 @@ export default function Home() {
       setTasks(todosArray);
     });
     return () => unsubscribe();
-  }, []);
+  }, [setInput]);
 
   //Read Todo from firebase
 
@@ -65,34 +71,16 @@ export default function Home() {
   };
 
   return (
-    <main className=" h-screen dark:text-white">
+    <main className=" h-screen dark:text-white overscroll-none">
       <div className=" text-center border-black">
         {/* App name */}
-        <div className="p-2 text-center text-white font-bold">
+        <div className="p-2 pb-4 text-center text-white font-bold">
           Ahmeds online Todo list
         </div>
 
         {/* Add Task Form */}
-
-        <div className="bg-gray-200 p-12 w-[600px] m-auto rounded-3xl shadow-lg">
-          <form className="w-[500px] m-auto" onSubmit={createTask}>
-            <div className="relative">
-              <input
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                type="search"
-                id="search"
-                className="w-full p-4 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                placeholder="Write task here.."
-              />
-              <button
-                type="submit"
-                className="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-              >
-                Task
-              </button>
-            </div>
-          </form>
+        <div className="bg-gray-200 p-6 w-[600px] m-auto rounded-3xl shadow-lg">
+          <AddForm createTask={createTask} input={input} setInput={setInput} />
 
           {/* Table */}
           <div className="pt-4">
@@ -103,38 +91,32 @@ export default function Home() {
             </div>
 
             {/* Tasks */}
-            <ul className="">
+            <ul className=" h-[500px] overflow-auto overscroll-contain overflow-y-scroll">
               {tasks.map((task, index) => (
-                <Tasks
+                <TasksList
                   key={index}
                   task={task}
                   toggleComplete={toggleComplete}
                   removeTask={removeTask}
                 />
               ))}
-              <p className="mt-4">
-                {tasks.length === 1
-                  ? `You have ${tasks.length} task to complete`
-                  : tasks.length > 1
-                  ? `You have ${tasks.length} tasks to complete`
-                  : null}
-              </p>
             </ul>
+            <p className="mt-4">
+              {tasks.length === 1
+                ? `You have ${tasks.length} task to complete`
+                : tasks.length > 1
+                ? `You have ${tasks.length} tasks to complete`
+                : null}
+            </p>
           </div>
         </div>
+        <button
+          className="bg-red-500  p-2 mt-4 rounded-full text-right text-sm text-white"
+          onClick={() => signOut()}
+        >
+          Sign out
+        </button>
       </div>
     </main>
   );
-}
-
-{
-  /*
-     <div className="">
-          <button className="bg-purple-800 font-bold rounded-md text-white w-[500px] p-2 mb-4 hover:bg-purple-950">
-            ADD NEW TASK +
-          </button>
-
-
-
-*/
 }
