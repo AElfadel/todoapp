@@ -106,6 +106,8 @@ export default function Home() {
                 ? `You have ${tasks.length} task to complete`
                 : tasks.length > 1
                 ? `You have ${tasks.length} tasks to complete`
+                : tasks.length === 0
+                ? `You have no tasks to complete`
                 : null}
             </p>
           </div>
